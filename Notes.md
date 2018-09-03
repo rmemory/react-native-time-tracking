@@ -76,3 +76,196 @@ This state could just live in each individual EditableTimer, which implies multi
 App doesn’t appear to care about whether ToggleableTimerForm is a button or TimerForm. Thus it feels safe to reason that the state can just live inside ToggleableTimerForm itself.
 
 # Step 5: Hardcode initial states
+
+# Step 6: Add inverse data flow
+
+# Step 7: Add server communication
+
+# Patterns
+
+## General architecture
+
+The top level app contains a title, a ToggleableTimerForm (which decides whether to show the "plus button" or TimerForm), a ScrollView (which contains the list of EditableTimers). The EditableTimer decides whether to display the Timer or the TimerForm. Lastly, there is the TimerButton which is used throughout.
+
+## Benefits of Functional Stateless Components
+
+Why would we want to use functional components? There are two main reasons:
+
+First, using functional components where possible encourages developers to manage state in fewer locations. This makes our programs easier to reason about.
+
+Second, using functional components are a great way to create reusable components. Because functional components need to have all their configuration passed from the outside, they are easy to reuse across apps or projects.
+
+A good rule of thumb is to use functional components as much as possible.
+
+## PropTypes
+
+import PropTypes from 'prop-types';
+
+TimerButton.propTypes = {
+	color: ColorPropType.isRequired,
+	title: PropTypes.string.isRequired,
+	small: PropTypes.bool,
+	onPress: PropTypes.func.isRequired,
+};
+
+TimerButton.defaultProps = {
+	small: false,
+};
+
+or
+class MyComponent {
+	static propTypes = {
+		id: PropTypes.string,
+		title: PropTypes.string,
+		project: PropTypes.string,
+		onFormSubmit: PropTypes.func.isRequired,
+		onFormClose: PropTypes.func.isRequired,
+	};
+
+	static defaultProps = {
+		id: null,
+		title: '',
+		project: '',
+	};
+
+## TextInput fields for React Native
+<View style={styles.textInputContainer}>
+	<TextInput
+		style={styles.textInput}
+		underlineColorAndroid="transparent"
+		defaultValue={title}
+	/>
+
+const styles = StyleSheet.create({
+	textInputContainer: {
+		borderColor: '#D6D7DA',
+		borderRadius: 2,
+		borderWidth: 1,
+		marginBottom: 5,
+	},
+	textInput: {
+		height: 30,
+		padding: 5,
+		fontSize: 12,
+	},
+
+## TouchableOpacity
+
+export default function TimerButton({ color, title, small, onPress }) {
+	return (
+		<TouchableOpacity
+			style={[styles.button, { borderColor: color }]}
+			onPress={onPress}
+		>
+			<Text
+				style={[
+				styles.buttonText,
+				small ? styles.small : styles.large,
+				{ color },
+				]}
+			>
+				{title}
+			</Text>
+		</TouchableOpacity>
+
+const styles = StyleSheet.create({
+	button: {
+		marginTop: 10,
+		minWidth: 100,
+		borderWidth: 2,
+		borderRadius: 3,
+	},
+	small: {
+		fontSize: 14,
+		padding: 5,
+	},
+	large: {
+		fontSize: 16,
+		padding: 10,
+	},
+	buttonText: {
+		textAlign: 'center',
+		fontWeight: 'bold',
+	},
+
+## Pattern to update a list of objects in state, where only a portion of the properties in the object need to be updated
+
+	state = {
+		timers: [{
+			title: 'Mow the lawn',
+			project: 'House Chores',
+			id: uuidv4(),
+			elapsed: 5456099,
+			isRunning: true,
+		},
+		{
+			title: 'Bake squash',
+			project: 'Kitchen Chores',
+			id: uuidv4(),
+			elapsed: 1273998,
+			isRunning: false,
+		},
+		}]
+	}
+
+	const { timers } = this.state;
+	
+	this.setState({
+		timers: timers.map(timer => {
+			const { elapsed, isRunning } = timer;
+			return {
+				...timer,
+				elapsed: isRunning ? elapsed + TIME_INTERVAL : elapsed,
+			};
+		}),
+	});
+
+## We can use map or other array operations to create JSX
+
+{timers.map(({ title, project, id, elapsed, isRunning }) => (
+	<EditableTimer
+	key={id}
+	id={id}
+	title={title}
+	project={project}
+	elapsed={elapsed}
+	isRunning={isRunning}
+	/>
+))}
+
+## Ternary generation of JSX
+
+return (
+	<View style={[styles.container, !isOpen && styles.buttonPadding]}>
+		{isOpen ? (
+			<TimerForm />
+		) : (
+			<TimerButton title="+" color="black" onPress={this.handleFormOpen} />
+		)}
+	</View>
+);
+
+## In React Native, forms are stateful.
+
+## Initialization of state based on props
+
+constructor(props) {
+	super(props);
+	const { id, title, project } = props;
+
+	this.state = {
+		title: id ? title : '',
+		project: id ? project : '',
+	};
+}
+
+handleTitleChange = title => {
+	this.setState({ title });
+};
+
+<TextInput
+	style={styles.textInput}
+	underlineColorAndroid="transparent"
+	onChangeText={this.handleTitleChange}
+	value={title}
+/>
